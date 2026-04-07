@@ -40,10 +40,10 @@
   .tab.active { background: var(--bg); color: var(--accent); border-color: var(--border); border-bottom-color: var(--bg); }
 
   .main { padding: 10px 16px; }
-  .center-block { margin-bottom: 8px; }
-  .center-title { font-size: 11px; font-weight: 700; color: var(--accent2); margin-bottom: 4px; padding: 2px 8px; background: var(--surface2); border-radius: 6px; display: inline-block; letter-spacing: 0.08em; }
+  .center-block { margin-bottom: 16px; width: fit-content; }
+  .center-title { display: none; }
 
-  .table-wrap { border-radius: 8px; border: 1px solid var(--border); }
+  .table-wrap { border-radius: 8px; border: 1px solid var(--border); width: fit-content; }
   .scroll-container { overflow-x: auto; }
   table { border-collapse: collapse; table-layout: fixed; width: auto; }
   th, td { border: 1px solid var(--border); text-align: center; height: var(--cell); width: var(--cell-w); min-width: var(--cell-w); max-width: var(--cell-w); overflow: hidden; white-space: nowrap; }
@@ -53,11 +53,11 @@
   th.name-col { background: var(--surface2); z-index: 3; }
   .count-row .name-col { background: var(--surface2); }
   th.sat-col { background: rgba(37,99,235,0.18); color: var(--sat); }
-  th.sun-col { background: rgba(220,38,38,0.1); color: var(--sun); }
-  th.hol-col { background: rgba(220,38,38,0.1); color: var(--sun); }
-  td.sat-col { background: rgba(37,99,235,0.12); }
-  td.sun-col { background: rgba(220,38,38,0.07); }
-  td.hol-col { background: rgba(220,38,38,0.07); }
+  th.sun-col { background: rgba(220,38,38,0.10); color: var(--sun); }
+  th.hol-col { background: rgba(220,38,38,0.10); color: var(--sun); }
+  td.sat-col { background: rgba(37,99,235,0.22); }
+  td.sun-col { background: rgba(220,38,38,0.15); }
+  td.hol-col { background: rgba(220,38,38,0.15); }
 
   td select { background: transparent; border: none; font-size: 12px; font-weight: 600; width: 100%; height: 100%; text-align: center; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; padding: 0; }
   td select:focus { background: var(--surface2); }
@@ -151,7 +151,7 @@
     }
 
     .count-row td { font-size: 13px; font-weight: 800; }
-    .center-title { font-size: 12px; padding: 3px 8px; }
+    .center-block { margin-bottom: 20px; }
 
     /* スタッフ管理・ステータス管理もタッチ対応 */
     .mgr-card { padding: 14px 10px; }
@@ -173,6 +173,7 @@
   }
 
   td.out-of-range { background: #eceef5 !important; }
+
   td.streak-warn { background: rgba(234,88,12,0.18); }
   td.streak-ack  { background: rgba(107,114,128,0.10); }
   .target-cal { border-collapse: collapse; margin-top: 10px; }
@@ -285,8 +286,8 @@ if (!localStorage.getItem('shiftApp_v3_restore_20260406b')) {
 // ===== 初期ステータス =====
 const DEFAULT_STATUSES = [
   { id: 'work',    label: '',   color: '#1a1d27', bg: '',        locked: true  }, // 出勤（空欄）
-  { id: 'rest',    label: '休', color: '#1a1d27', bg: '',        locked: true  }, // 休(黒)
-  { id: 'hope',    label: '休', color: '#dc2626', bg: '',        locked: true  }, // 休(赤)=希望休
+  { id: 'rest',    label: '休', color: '#1a1d27', bg: 'rgba(0,0,0,0.07)', locked: true  }, // 休み＝薄グレー背景・黒文字
+  { id: 'hope',    label: '休', color: '#dc2626', bg: 'rgba(0,0,0,0.07)', locked: true  }, // 希望休＝薄グレー背景・赤文字
   { id: 'kosei',   label: '湖', color: '#b45309', bg: '#fef9c3', locked: false }, // 湖西=黄色系
   { id: 'shimo',   label: '下', color: '#b91c1c', bg: '#fee2e2', locked: false }, // 下石田=赤系
   { id: 'higashi', label: '東', color: '#15803d', bg: '#dcfce7', locked: false }, // 東若林=緑系
@@ -787,6 +788,28 @@ data.centers.forEach(c => {
   localStorage.setItem('shiftApp_v3', JSON.stringify(data));
 })();
 
+// ===== 休み・希望休の色を統一（背景なし・休み黒・希望休赤）=====
+(function migrateStatusColors() {
+  if (data._migrated_status_colors_v1) return;
+  data.statusList.forEach(s => {
+    if (s.id === 'rest') { s.bg = 'rgba(0,0,0,0.07)'; s.color = '#1a1d27'; }
+    if (s.id === 'hope') { s.bg = ''; s.color = '#dc2626'; }
+  });
+  data._migrated_status_colors_v1 = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
+// ===== 休み・希望休ともに薄グレー背景 =====
+(function migrateRestHopeColorsV5() {
+  if (data._migrated_rest_hope_colors_v5) return;
+  data.statusList.forEach(s => {
+    if (s.id === 'rest') { s.bg = 'rgba(0,0,0,0.07)'; s.color = '#1a1d27'; }
+    if (s.id === 'hope') { s.bg = 'rgba(0,0,0,0.07)'; s.color = '#dc2626'; }
+  });
+  data._migrated_rest_hope_colors_v5 = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
 let currentYear  = new Date().getFullYear();
 let currentMonth = new Date().getMonth() + 1;
 
@@ -1120,35 +1143,46 @@ function renderShiftTables() {
   const days = getDaysInMonth(currentYear, currentMonth);
   const dayNames = ['日','月','火','水','木','金','土'];
 
+  // 年月ラベル（枠外・テーブル上部）
+  const monthHeader = document.createElement('div');
+  monthHeader.style.cssText = 'font-size:14px;font-weight:700;color:var(--text);padding:2px 4px 6px;letter-spacing:0.05em;';
+  monthHeader.textContent = `${currentYear}年${currentMonth}月`;
+  container.appendChild(monthHeader);
+
   // 全拠点を1つのスクロールコンテナに入れる
   const scrollContainer = document.createElement('div');
   scrollContainer.className = 'scroll-container';
 
-  data.centers.forEach((center, centerIndex) => {
+  const centerColors = { kosei: '#92400e', shimo: '#991b1b', higashi: '#166534' };
+  const centerBgs    = { kosei: '#fef9c3', shimo: '#fee2e2', higashi: '#dcfce7' };
+
+  // 表示順：下石田→湖西→東若林
+  const centerOrder = ['shimo', 'kosei', 'higashi'];
+  const sortedCenters = [...data.centers].sort((a, b) => centerOrder.indexOf(a.id) - centerOrder.indexOf(b.id));
+
+  sortedCenters.forEach((center, centerIndex) => {
     const block = document.createElement('div');
     block.className = 'center-block';
-    const titleRow = document.createElement('div');
-    titleRow.style.cssText = 'position:relative;margin-bottom:4px;';
-    const title = document.createElement('div');
-    title.className = 'center-title';
-    title.style.marginBottom = '0';
-    title.textContent = center.name;
-    const centerColors = { kosei: '#92400e', shimo: '#991b1b', higashi: '#166534' };
-    const centerBgs    = { kosei: '#fef9c3', shimo: '#fee2e2', higashi: '#dcfce7' };
-    title.style.color      = centerColors[center.id] || '#92400e';
-    title.style.background = centerBgs[center.id]    || '#fef9c3';
-    titleRow.appendChild(title);
-    if (centerIndex === 0) {
-      const monthLbl = document.createElement('div');
-      monthLbl.style.cssText = 'position:absolute;left:429px;top:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;pointer-events:none;';
-      monthLbl.textContent = `${currentYear}年${currentMonth}月`;
-      titleRow.appendChild(monthLbl);
-    }
-    block.appendChild(titleRow);
 
     const wrap = document.createElement('div');
     wrap.className = 'table-wrap';
     const table = document.createElement('table');
+
+    // センターヘッダー行（テーブル内）
+    const trTitle = document.createElement('tr');
+    const tdTitle = document.createElement('td');
+    tdTitle.colSpan = days + 1;
+    const bg = centerBgs[center.id] || '#fef9c3';
+    const fg = centerColors[center.id] || '#92400e';
+    tdTitle.style.cssText = `background:${bg};color:${fg};font-weight:700;font-size:13px;padding:5px 10px;position:relative;text-align:left;`;
+    tdTitle.textContent = center.name;
+    const staffCount = getActiveStaff(center).length;
+    const cntSpan = document.createElement('span');
+    cntSpan.style.cssText = 'position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:600;';
+    cntSpan.textContent = `${staffCount}名`;
+    tdTitle.appendChild(cntSpan);
+    trTitle.appendChild(tdTitle);
+    table.appendChild(trTitle);
 
     // ヘッダー
     const trH = document.createElement('tr');
@@ -1885,77 +1919,60 @@ async function exportPDF() {
   try {
     const container = document.getElementById('shift-tables');
 
-    // Temporarily replace selects with styled spans for clean capture
+    // selectをspanに一時置換（背景色もTDに適用）
     const selects = container.querySelectorAll('select');
     const selectData = [];
     selects.forEach(sel => {
-      const span = document.createElement('span');
+      const td = sel.parentElement;
       const sid = sel.value;
       const s = getStatus(sid);
-      let label = '';
-      if (sid === 'work') label = '';
-      else if (sid === 'hope') label = '休';
-      else label = s.label;
+      const label = (sid === 'work') ? '' : s.label;
+      const span = document.createElement('span');
       span.textContent = label;
       span.style.cssText = 'color:' + s.color + ';font-weight:600;font-size:12px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;';
-      if (s.bg) span.parentElement && (span.style.background = s.bg);
-      span.className = 'pdf-temp-span';
-      selectData.push({ sel: sel, parent: sel.parentElement, span: span });
-      sel.parentElement.replaceChild(span, sel);
+      const origBg = td.style.background;
+      if (s.bg) td.style.background = s.bg;
+      selectData.push({ sel, td, span, origBg });
+      td.replaceChild(span, sel);
     });
 
-    // Hide elements that shouldn't be in PDF
-    const hideEls = [
-      document.querySelector('header'),
-      document.querySelector('.tabs'),
-      document.querySelector('.controls'),
-      document.querySelector('.legend')
-    ].filter(Boolean);
-    hideEls.forEach(function(el) { el.style.display = 'none'; });
+    // overflow を一時解除してすべての列をキャプチャ可能に
+    const scrollContainer = container.querySelector('.scroll-container');
+    const origOverflow = scrollContainer ? scrollContainer.style.overflow : '';
+    if (scrollContainer) scrollContainer.style.overflow = 'visible';
 
-    // Add temporary title for PDF
-    const pdfTitle = document.createElement('div');
-    pdfTitle.id = 'pdf-temp-title';
-    pdfTitle.style.cssText = 'padding:12px 16px 8px;font-size:16px;font-weight:700;color:#1a1d27;';
-    pdfTitle.innerHTML = '📦 シフト管理 ヤマト運輸 軽貨物配送 — ' + currentYear + '年' + String(currentMonth).padStart(2,'0') + '月';
-    container.parentElement.insertBefore(pdfTitle, container);
+    // テーブルコンテンツの実幅（月末まで）を使用
+    const firstTable = container.querySelector('table');
+    const fullW = firstTable ? firstTable.offsetWidth : container.scrollWidth;
+    const fullH = container.scrollHeight;
 
-    // Capture
-    const canvas = await html2canvas(container.parentElement, {
-      scale: 2,
+    const canvas = await html2canvas(container, {
+      scale: 1.5,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
-      windowWidth: container.scrollWidth + 40
+      windowWidth: fullW,
+      width: fullW,
+      height: fullH,
+      scrollX: 0,
+      scrollY: 0
     });
 
-    // Create PDF (landscape A4)
+    if (scrollContainer) scrollContainer.style.overflow = origOverflow;
+
+    // コンテンツサイズぴったりのPDFを作成（余白なし）
     const jsPDFLib = window.jspdf;
-    const pdf = new jsPDFLib.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 3;
-    const usableW = pageW - margin * 2;
-    const usableH = pageH - margin * 2;
-
-    // 1枚に収まるよう縦横スケールを自動調整
-    const scaleW = usableW / canvas.width;
-    const scaleH = usableH / canvas.height;
-    const scale = Math.min(scaleW, scaleH);
-    const imgW = canvas.width * scale;
-    const imgH = canvas.height * scale;
-    // 中央に配置
-    const offsetX = margin + (usableW - imgW) / 2;
-    const offsetY = margin + (usableH - imgH) / 2;
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', offsetX, offsetY, imgW, imgH);
-
+    const pxToMm = 25.4 / 96;
+    const pageW = canvas.width / 1.5 * pxToMm;
+    const pageH = canvas.height / 1.5 * pxToMm;
+    const pdf = new jsPDFLib.jsPDF({ orientation: pageW > pageH ? 'landscape' : 'portrait', unit: 'mm', format: [pageW, pageH] });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, pageH);
     pdf.save('シフト_' + currentYear + String(currentMonth).padStart(2,'0') + '.pdf');
 
-    // Restore
-    pdfTitle.remove();
-    hideEls.forEach(function(el) { el.style.display = ''; });
-    selectData.forEach(function(d) {
-      if (d.span.parentElement) d.span.parentElement.replaceChild(d.sel, d.span);
+    // 元に戻す
+    selectData.forEach(({ sel, td, span, origBg }) => {
+      if (span.parentElement) td.replaceChild(sel, span);
+      td.style.background = origBg;
     });
 
   } catch (err) {
