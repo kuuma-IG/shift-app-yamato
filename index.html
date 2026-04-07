@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>シフト管理</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f5f6fa;
+    --surface2: #eaecf4;
+    --accent: #2563eb;
+    --accent2: #d97706;
+    --danger: #dc2626;
+    --text: #1a1d27;
+    --muted: #6b7280;
+    --sat: #2563eb;
+    --sun: #dc2626;
+    --border: #d1d5db;
+    --cell: 26px;
+    --cell-w: 26px;
+    --name-col-w: 52px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; font-size: 12px; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 7px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 13px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent); }
+  header .sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  .controls { background: var(--surface); border-bottom: 1px solid var(--border); padding: 5px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn { background: var(--accent); color: #fff; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn.secondary { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  .tabs { display: flex; gap: 4px; padding: 6px 16px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .tab { padding: 5px 14px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--muted); border: 1px solid transparent; border-bottom: none; transition: all 0.15s; }
+  .tab.active { background: var(--bg); color: var(--accent); border-color: var(--border); border-bottom-color: var(--bg); }
+
+  .main { padding: 10px 16px; }
+  .center-block { margin-bottom: 8px; }
+  .center-title { font-size: 11px; font-weight: 700; color: var(--accent2); margin-bottom: 4px; padding: 2px 8px; background: var(--surface2); border-radius: 6px; display: inline-block; letter-spacing: 0.08em; }
+
+  .table-wrap { border-radius: 8px; border: 1px solid var(--border); }
+  .scroll-container { overflow-x: auto; }
+  table { border-collapse: collapse; table-layout: fixed; width: auto; }
+  th, td { border: 1px solid var(--border); text-align: center; height: var(--cell); width: var(--cell-w); min-width: var(--cell-w); max-width: var(--cell-w); overflow: hidden; white-space: nowrap; }
+  th { background: var(--surface2); font-size: 11px; font-weight: 600; color: var(--muted); padding: 0 1px; }
+  td { background: #ffffff; padding: 0; }
+  .name-col { width: var(--name-col-w); min-width: var(--name-col-w); max-width: var(--name-col-w); padding: 0 4px; text-align: left; font-weight: 600; color: var(--text); position: sticky; left: 0; z-index: 2; background: #ffffff; white-space: nowrap; overflow: hidden; }
+  th.name-col { background: var(--surface2); z-index: 3; }
+  .count-row .name-col { background: var(--surface2); }
+  th.sat-col { background: rgba(37,99,235,0.18); color: var(--sat); }
+  th.sun-col { background: rgba(220,38,38,0.1); color: var(--sun); }
+  th.hol-col { background: rgba(220,38,38,0.1); color: var(--sun); }
+  td.sat-col { background: rgba(37,99,235,0.12); }
+  td.sun-col { background: rgba(220,38,38,0.07); }
+  td.hol-col { background: rgba(220,38,38,0.07); }
+
+  td select { background: transparent; border: none; font-size: 12px; font-weight: 600; width: 100%; height: 100%; text-align: center; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; padding: 0; }
+  td select:focus { background: var(--surface2); }
+
+  .count-row td { background: var(--surface2); font-weight: 700; font-size: 12px; color: var(--accent); }
+  .count-row .name-col { color: var(--muted); }
+
+  .legend { display: flex; gap: 10px; font-size: 10px; color: var(--muted); margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+  .month-nav { display: flex; align-items: center; gap: 10px; }
+  .month-nav button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .month-nav .month-label { font-size: 14px; font-weight: 700; min-width: 80px; text-align: center; }
+
+  .mgr-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+  .mgr-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--accent); }
+  .mgr-card .desc { font-size: 11px; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .tag .remove { color: var(--danger); cursor: pointer; font-size: 15px; line-height: 1; }
+  .tag .locked { color: var(--muted); font-size: 11px; }
+  .add-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .add-row input, .add-row select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+  .add-row input { width: 90px; }
+  .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid #ccc; }
+  .hidden { display: none; }
+
+  /* 折りたたみトグルボタン（モバイル用） */
+  .mobile-range-toggle {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .range-controls-inner { display: contents; }
+
+  @media (max-width: 600px) {
+    :root {
+      --cell: 38px;
+      --cell-w: 38px;
+      --name-col-w: 48px;
+    }
+    body { font-size: 13px; -webkit-text-size-adjust: 100%; }
+
+    header { padding: 8px 10px; flex-wrap: wrap; gap: 6px; }
+    header h1 { font-size: 14px; }
+    header .sub { font-size: 10px; }
+    header > div:last-child { display: flex; gap: 6px; flex-wrap: wrap; }
+    header .btn { padding: 8px 12px; font-size: 12px; min-height: 36px; }
+
+    .tabs { padding: 0 8px; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab { padding: 10px 14px; font-size: 13px; white-space: nowrap; min-height: 40px; }
+
+    .controls { padding: 8px 10px; gap: 8px; flex-direction: column; align-items: stretch; }
+    .month-nav { justify-content: center; }
+    .month-nav button { padding: 8px 14px; font-size: 16px; min-height: 36px; }
+    .month-nav .month-label { font-size: 16px; min-width: 100px; }
+
+    /* 編集範囲コントロールを折りたたみ */
+    .mobile-range-toggle { display: block; }
+    .range-controls-inner {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 0 0;
+    }
+    .range-controls-inner.open { display: flex; }
+    .controls > div[style*="width:1px"] { display: none; }
+
+    .main { padding: 8px; }
+
+    th, td { height: var(--cell); width: var(--cell-w); min-width: var(--cell-w); max-width: var(--cell-w); }
+    th { font-size: 10px; }
+    th div { font-size: 10px !important; }
+    th div span { font-size: 9px !important; }
+
+    .name-col { width: var(--name-col-w); min-width: var(--name-col-w); max-width: var(--name-col-w); font-size: 11px; padding: 0 2px; }
+
+    td select {
+      font-size: 14px;
+      font-weight: 700;
+      min-height: var(--cell);
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .count-row td { font-size: 13px; font-weight: 800; }
+    .center-title { font-size: 12px; padding: 3px 8px; }
+
+    /* スタッフ管理・ステータス管理もタッチ対応 */
+    .mgr-card { padding: 14px 10px; }
+    .mgr-card h3 { font-size: 14px; }
+    .tag { padding: 8px 12px; font-size: 13px; min-height: 36px; }
+    .tag .remove { font-size: 20px; padding: 0 4px; min-width: 28px; text-align: center; }
+    .add-row { gap: 8px; }
+    .add-row input, .add-row select { padding: 10px 12px; font-size: 14px; min-height: 40px; }
+    .add-row .btn { padding: 10px 14px; font-size: 14px; min-height: 40px; }
+
+    /* 稼働設定カレンダーもタッチ対応 */
+    .target-cal th { width: auto; min-width: 40px; padding: 6px 2px; font-size: 11px; }
+    .target-cal td { width: auto; min-width: 40px; height: 50px; font-size: 12px; }
+
+    /* undo/redo ボタン */
+    #btn-undo, #btn-redo { font-size: 18px !important; padding: 8px 14px !important; min-height: 36px; }
+
+    .scroll-container { -webkit-overflow-scrolling: touch; }
+  }
+
+  td.out-of-range { background: #eceef5 !important; }
+  td.streak-warn { background: rgba(234,88,12,0.18); }
+  td.streak-ack  { background: rgba(107,114,128,0.10); }
+  .target-cal { border-collapse: collapse; margin-top: 10px; }
+  .target-cal th { background: var(--surface2); font-size: 11px; font-weight: 600; padding: 4px 2px; width: 46px; border: 1px solid var(--border); color: var(--muted); }
+  .target-cal td { border: 1px solid var(--border); width: 46px; height: 46px; text-align: center; cursor: pointer; padding: 2px; vertical-align: middle; }
+  .target-cal td:not(.empty-cell):hover { opacity: 0.75; }
+  .target-cal td.empty-cell { background: var(--surface); cursor: default; }
+  .target-cal td.is-override { background: rgba(37,99,235,0.12); }
+  .target-cal td.is-unset { background: #1a1d27; color: #fff; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📦 シフト管理</h1>
+    <div class="sub">ヤマト運輸 軽貨物配送</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn secondary" onclick="exportCSV()">CSVで出力</button>
+    <button class="btn secondary" onclick="exportPDF()" style="background:#dc2626;color:#fff;border:none;">📄 PDF保存</button>
+    <button class="btn secondary" onclick="exportJSON()">📤 データ出力</button>
+    <button class="btn secondary" onclick="importJSON()">📥 データ読込</button>
+    <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="onImportFileSelected(event)">
+    <button class="btn" onclick="saveData()">💾 保存</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('shift',this)">シフト表</div>
+  <div class="tab" onclick="switchTab('staff',this)">スタッフ管理</div>
+  <div class="tab" onclick="switchTab('status',this)">ステータス管理</div>
+  <div class="tab" onclick="switchTab('target',this)">稼働設定</div>
+</div>
+
+<div id="tab-shift" class="main">
+  <div class="controls">
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">◀</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button onclick="changeMonth(1)">▶</button>
+    </div>
+    <div style="display:flex;gap:4px;">
+      <button class="btn secondary" id="btn-undo" onclick="undo()" title="元に戻す (Ctrl+Z)" style="font-size:15px;padding:4px 10px;" disabled>↩</button>
+      <button class="btn secondary" id="btn-redo" onclick="redo()" title="やり直す (Ctrl+Y)" style="font-size:15px;padding:4px 10px;" disabled>↪</button>
+    </div>
+    <button class="mobile-range-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.textContent=this.nextElementSibling.classList.contains('open')?'▼ 編集範囲を閉じる':'▶ 編集範囲・リセット';">▶ 編集範囲・リセット</button>
+    <div class="range-controls-inner">
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);flex-wrap:wrap;">
+        編集範囲：
+        <select id="range-start-month" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:12px;" onchange="saveRangeSettings()"></select>月
+        <input type="number" id="range-start-day" min="1" max="31" value="1" style="width:46px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:12px;" onchange="saveRangeSettings()" />
+        日〜
+        <select id="range-end-month" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:12px;" onchange="saveRangeSettings()"></select>月
+        <input type="number" id="range-end-day" min="1" max="31" value="31" style="width:46px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:12px;" onchange="saveRangeSettings()" />
+        日
+      </div>
+      <div>
+        <button class="btn secondary" onclick="rangeReset()" style="font-size:12px;color:#dc2626;">範囲リセット</button>
+      </div>
+    </div>
+  </div>
+  <div style="height:6px;"></div>
+  <div class="legend hidden" id="legend-area"></div>
+  <div id="shift-tables"></div>
+</div>
+
+<div id="tab-staff" class="main hidden">
+  <div id="center-staff-mgr"></div>
+</div>
+
+<div id="tab-status" class="main hidden">
+  <div class="mgr-card">
+    <h3>🏷️ ステータス管理</h3>
+    <p class="desc">
+      シフト表のセルで選べる項目を管理します。<br>
+      🔒 マークは固定項目で削除できません。<br>
+      「休★」は希望休（赤文字）、「休」は通常休（黒文字）として表示されます。
+    </p>
+    <div class="tag-list" id="status-tag-list"></div>
+    <div class="add-row">
+      <input type="text" id="status-new-label" placeholder="表示文字（例：有）" maxlength="4" />
+      <select id="status-new-color">
+        <option value="#1a1d27">● 黒</option>
+        <option value="#dc2626">● 赤</option>
+        <option value="#d97706">● オレンジ</option>
+        <option value="#2563eb">● 青</option>
+        <option value="#16a34a">● 緑</option>
+        <option value="#7c3aed">● 紫</option>
+      </select>
+      <button class="btn" onclick="addStatus()">追加</button>
+    </div>
+  </div>
+</div>
+
+<div id="tab-target" class="main hidden">
+  <div id="target-mgr"></div>
+</div>
+
+<script>
+// ===== 一回限りのlocalStorageリセット（範囲リセット誤操作からの復元） =====
+if (!localStorage.getItem('shiftApp_v3_restore_20260406b')) {
+  localStorage.removeItem('shiftApp_v3');
+  localStorage.removeItem('shiftApp_v3_sync_reset_20260406');
+  localStorage.setItem('shiftApp_v3_restore_20260406b', 'done');
+}
+
+// ===== 初期ステータス =====
+const DEFAULT_STATUSES = [
+  { id: 'work',    label: '',   color: '#1a1d27', bg: '',        locked: true  }, // 出勤（空欄）
+  { id: 'rest',    label: '休', color: '#1a1d27', bg: '',        locked: true  }, // 休(黒)
+  { id: 'hope',    label: '休', color: '#dc2626', bg: '',        locked: true  }, // 休(赤)=希望休
+  { id: 'kosei',   label: '湖', color: '#b45309', bg: '#fef9c3', locked: false }, // 湖西=黄色系
+  { id: 'shimo',   label: '下', color: '#b91c1c', bg: '#fee2e2', locked: false }, // 下石田=赤系
+  { id: 'higashi', label: '東', color: '#15803d', bg: '#dcfce7', locked: false }, // 東若林=緑系
+];
+
+let data = loadData() || {
+  statusList: DEFAULT_STATUSES,
+  centers: [
+    { id: 'kosei',   name: '湖西',   staff: ['池田','梶原','田中幸','高橋','森下','山本成','加藤'] },
+    { id: 'shimo',   name: '下石田', staff: ['岡田'] },
+    { id: 'higashi', name: '東若林', staff: ['安藤','伊熊','鈴木','中川','花高','平松','松本','森','久保田','村井'] }
+  ],
+  shifts: {}
+};
+if (!data.statusList) data.statusList = DEFAULT_STATUSES;
+if (!data.staffFrom) data.staffFrom = {};
+if (!data.streakAck) data.streakAck = {};
+if (!data.targets) data.targets = {};
+data.centers.forEach(c => {
+  if (!data.targets[c.id]) data.targets[c.id] = { dow: {}, overrides: {} };
+  if (!data.targets[c.id].dow) data.targets[c.id].dow = {};
+  if (!data.targets[c.id].overrides) data.targets[c.id].overrides = {};
+});
+// 旧フォーマット（曜日キー0-6が直接 t.dow に入っている）を月別構造へ移行
+(function migrateDowToMonthly() {
+  if (data._migrated_dow_monthly) return;
+  const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  data.centers.forEach(c => {
+    const t = data.targets[c.id];
+    if (!t || !t.dow) return;
+    const keys = Object.keys(t.dow);
+    if (keys.length > 0 && keys.every(k => /^[0-6]$/.test(k))) {
+      const old = {...t.dow};
+      t.dow = {};
+      t.dow[monthKey] = {};
+      Object.entries(old).forEach(([k, v]) => { t.dow[monthKey][parseInt(k)] = v; });
+    }
+  });
+  data._migrated_dow_monthly = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
+// ===== 5月データ初期設定（一回のみ実行） =====
+(function applyMay2026() {
+  if (data._migrated_may2026) return;
+  const kosei = data.centers.find(c => c.id === 'kosei');
+  // 新居・岡崎を湖西に追加（5月〜）
+  ['新居', '岡崎'].forEach(name => {
+    if (!kosei.staff.includes(name)) {
+      kosei.staff.push(name);
+      data.staffFrom['kosei__' + name] = { year: 2026, month: 5 };
+    }
+  });
+  // シフトキー生成
+  const k = (name, d) => `kosei__${name}__2026-05-${String(d).padStart(2,'0')}`;
+  // 池田：木曜（7,14,21,28日）希望休
+  [7,14,21,28].forEach(d => { data.shifts[k('池田',d)] = 'hope'; });
+  // 田中幸：3〜5日 希望休
+  [3,4,5].forEach(d => { data.shifts[k('田中幸',d)] = 'hope'; });
+  // 加藤：9,10日 希望休
+  [9,10].forEach(d => { data.shifts[k('加藤',d)] = 'hope'; });
+  // 梶原：9,10日 希望休
+  [9,10].forEach(d => { data.shifts[k('梶原',d)] = 'hope'; });
+  data._migrated_may2026 = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
+// ===== 東若林 休み希望確定分（2026年4月・5月）=====
+(function applyHigashiAprMay2026() {
+  if (data._migrated_higashi_aprmay2026) return;
+  const ka = (name, d) => `higashi__${name}__2026-04-${String(d).padStart(2,'0')}`;
+  const km = (name, d) => `higashi__${name}__2026-05-${String(d).padStart(2,'0')}`;
+
+  // 松本：4/26・27、5/3〜7
+  [26,27].forEach(d => { data.shifts[ka('松本',d)] = 'hope'; });
+  [3,4,5,6,7].forEach(d => { data.shifts[km('松本',d)] = 'hope'; });
+
+  // 鈴木：5/3〜5
+  [3,4,5].forEach(d => { data.shifts[km('鈴木',d)] = 'hope'; });
+
+  // 村井：4/25〜30、5/1〜7
+  [25,26,27,28,29,30].forEach(d => { data.shifts[ka('村井',d)] = 'hope'; });
+  [1,2,3,4,5,6,7].forEach(d => { data.shifts[km('村井',d)] = 'hope'; });
+
+  // 平松：5/4
+  data.shifts[km('平松',4)] = 'hope';
+
+  // 中川：4/27、5/7
+  data.shifts[ka('中川',27)] = 'hope';
+  data.shifts[km('中川',7)] = 'hope';
+
+  data._migrated_higashi_aprmay2026 = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
+// ===== 久保田：火・土・日出勤、月・水・木・金休（2026年4月・5月）=====
+(function applyKubotaPattern2026v2() {
+  if (data._migrated_kubota_pattern2026v2) return;
+  const restDows = new Set([1, 3, 4, 5]); // 月=1, 水=3, 木=4, 金=5
+  [[2026,4,30],[2026,5,31]].forEach(([y,m,days]) => {
+    for (let d = 1; d <= days; d++) {
+      const dow = new Date(y, m-1, d).getDay();
+      const key = `higashi__久保田__${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      data.shifts[key] = restDows.has(dow) ? 'rest' : 'work';
+    }
+  });
+  data._migrated_kubota_pattern2026v2 = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
+// ===== 4月出勤データ反映（スプレッドシートから取得：4/1〜4/20）=====
+(function applyApril2026FromSheet() {
+  if (data._migrated_april2026_from_sheet) return;
+  const shifts = {
+    "kosei__池田__2026-04-01": "work",
+    "kosei__池田__2026-04-02": "work",
+    "kosei__池田__2026-04-03": "work",
+    "kosei__池田__2026-04-04": "work",
+    "kosei__池田__2026-04-05": "work",
+    "kosei__池田__2026-04-06": "work",
+    "kosei__池田__2026-04-07": "hope",
+    "kosei__池田__2026-04-08": "work",
+    "kosei__池田__2026-04-09": "work",
+    "kosei__池田__2026-04-10": "work",
+    "kosei__池田__2026-04-11": "work",
+    "kosei__池田__2026-04-12": "rest",
+    "kosei__池田__2026-04-13": "work",
+    "kosei__池田__2026-04-14": "work",
+    "kosei__池田__2026-04-15": "rest",
+    "kosei__池田__2026-04-16": "work",
+    "kosei__池田__2026-04-17": "work",
+    "kosei__池田__2026-04-18": "work",
+    "kosei__池田__2026-04-19": "work",
+    "kosei__池田__2026-04-20": "work",
+    "kosei__梶原__2026-04-01": "work",
+    "kosei__梶原__2026-04-02": "work",
+    "kosei__梶原__2026-04-03": "work",
+    "kosei__梶原__2026-04-04": "rest",
+    "kosei__梶原__2026-04-05": "work",
+    "kosei__梶原__2026-04-06": "work",
+    "kosei__梶原__2026-04-07": "work",
+    "kosei__梶原__2026-04-08": "work",
+    "kosei__梶原__2026-04-09": "work",
+    "kosei__梶原__2026-04-10": "work",
+    "kosei__梶原__2026-04-11": "rest",
+    "kosei__梶原__2026-04-12": "work",
+    "kosei__梶原__2026-04-13": "work",
+    "kosei__梶原__2026-04-14": "work",
+    "kosei__梶原__2026-04-15": "work",
+    "kosei__梶原__2026-04-16": "work",
+    "kosei__梶原__2026-04-17": "work",
+    "kosei__梶原__2026-04-18": "rest",
+    "kosei__梶原__2026-04-19": "work",
+    "kosei__梶原__2026-04-20": "rest",
+    "kosei__田中幸__2026-04-01": "work",
+    "kosei__田中幸__2026-04-02": "work",
+    "kosei__田中幸__2026-04-03": "rest",
+    "kosei__田中幸__2026-04-04": "work",
+    "kosei__田中幸__2026-04-05": "work",
+    "kosei__田中幸__2026-04-06": "work",
+    "kosei__田中幸__2026-04-07": "work",
+    "kosei__田中幸__2026-04-08": "work",
+    "kosei__田中幸__2026-04-09": "work",
+    "kosei__田中幸__2026-04-10": "rest",
+    "kosei__田中幸__2026-04-11": "work",
+    "kosei__田中幸__2026-04-12": "work",
+    "kosei__田中幸__2026-04-13": "work",
+    "kosei__田中幸__2026-04-14": "work",
+    "kosei__田中幸__2026-04-15": "work",
+    "kosei__田中幸__2026-04-16": "work",
+    "kosei__田中幸__2026-04-17": "rest",
+    "kosei__田中幸__2026-04-18": "work",
+    "kosei__田中幸__2026-04-19": "work",
+    "kosei__田中幸__2026-04-20": "work",
+    "kosei__高橋__2026-04-01": "work",
+    "kosei__高橋__2026-04-02": "work",
+    "kosei__高橋__2026-04-03": "work",
+    "kosei__高橋__2026-04-04": "work",
+    "kosei__高橋__2026-04-05": "hope",
+    "kosei__高橋__2026-04-06": "hope",
+    "kosei__高橋__2026-04-07": "work",
+    "kosei__高橋__2026-04-08": "work",
+    "kosei__高橋__2026-04-09": "work",
+    "kosei__高橋__2026-04-10": "work",
+    "kosei__高橋__2026-04-11": "work",
+    "kosei__高橋__2026-04-12": "rest",
+    "kosei__高橋__2026-04-13": "work",
+    "kosei__高橋__2026-04-14": "work",
+    "kosei__高橋__2026-04-15": "work",
+    "kosei__高橋__2026-04-16": "work",
+    "kosei__高橋__2026-04-17": "work",
+    "kosei__高橋__2026-04-18": "work",
+    "kosei__高橋__2026-04-19": "rest",
+    "kosei__高橋__2026-04-20": "work",
+    "kosei__森下__2026-04-01": "rest",
+    "kosei__森下__2026-04-02": "work",
+    "kosei__森下__2026-04-03": "work",
+    "kosei__森下__2026-04-04": "work",
+    "kosei__森下__2026-04-05": "work",
+    "kosei__森下__2026-04-06": "rest",
+    "kosei__森下__2026-04-07": "work",
+    "kosei__森下__2026-04-08": "rest",
+    "kosei__森下__2026-04-09": "work",
+    "kosei__森下__2026-04-10": "work",
+    "kosei__森下__2026-04-11": "work",
+    "kosei__森下__2026-04-12": "work",
+    "kosei__森下__2026-04-13": "rest",
+    "kosei__森下__2026-04-14": "work",
+    "kosei__森下__2026-04-15": "work",
+    "kosei__森下__2026-04-16": "work",
+    "kosei__森下__2026-04-17": "work",
+    "kosei__森下__2026-04-18": "work",
+    "kosei__森下__2026-04-19": "rest",
+    "kosei__森下__2026-04-20": "work",
+    "kosei__山本成__2026-04-01": "rest",
+    "kosei__山本成__2026-04-02": "rest",
+    "kosei__山本成__2026-04-03": "rest",
+    "kosei__山本成__2026-04-04": "rest",
+    "kosei__山本成__2026-04-05": "rest",
+    "kosei__山本成__2026-04-06": "rest",
+    "kosei__山本成__2026-04-07": "rest",
+    "kosei__山本成__2026-04-08": "rest",
+    "kosei__山本成__2026-04-09": "rest",
+    "kosei__山本成__2026-04-10": "rest",
+    "kosei__山本成__2026-04-11": "rest",
+    "kosei__山本成__2026-04-12": "rest",
+    "kosei__山本成__2026-04-13": "rest",
+    "kosei__山本成__2026-04-14": "rest",
+    "kosei__山本成__2026-04-15": "rest",
+    "kosei__山本成__2026-04-16": "rest",
+    "kosei__山本成__2026-04-17": "rest",
+    "kosei__山本成__2026-04-18": "rest",
+    "kosei__山本成__2026-04-19": "rest",
+    "kosei__山本成__2026-04-20": "rest",
+    "kosei__加藤__2026-04-01": "rest",
+    "kosei__加藤__2026-04-02": "rest",
+    "kosei__加藤__2026-04-03": "rest",
+    "kosei__加藤__2026-04-04": "work",
+    "kosei__加藤__2026-04-05": "work",
+    "kosei__加藤__2026-04-06": "rest",
+    "kosei__加藤__2026-04-07": "rest",
+    "kosei__加藤__2026-04-08": "rest",
+    "kosei__加藤__2026-04-09": "rest",
+    "kosei__加藤__2026-04-10": "rest",
+    "kosei__加藤__2026-04-11": "work",
+    "kosei__加藤__2026-04-12": "work",
+    "kosei__加藤__2026-04-13": "rest",
+    "kosei__加藤__2026-04-14": "rest",
+    "kosei__加藤__2026-04-15": "rest",
+    "kosei__加藤__2026-04-16": "rest",
+    "kosei__加藤__2026-04-17": "rest",
+    "kosei__加藤__2026-04-18": "shimo",
+    "kosei__加藤__2026-04-19": "work",
+    "kosei__加藤__2026-04-20": "rest",
+    "shimo__岡田__2026-04-01": "work",
+    "shimo__岡田__2026-04-02": "work",
+    "shimo__岡田__2026-04-03": "work",
+    "shimo__岡田__2026-04-04": "work",
+    "shimo__岡田__2026-04-05": "rest",
+    "shimo__岡田__2026-04-06": "kosei",
+    "shimo__岡田__2026-04-07": "work",
+    "shimo__岡田__2026-04-08": "work",
+    "shimo__岡田__2026-04-09": "work",
+    "shimo__岡田__2026-04-10": "work",
+    "shimo__岡田__2026-04-11": "work",
+    "shimo__岡田__2026-04-12": "rest",
+    "shimo__岡田__2026-04-13": "rest",
+    "shimo__岡田__2026-04-14": "work",
+    "shimo__岡田__2026-04-15": "work",
+    "shimo__岡田__2026-04-16": "work",
+    "shimo__岡田__2026-04-17": "work",
+    "shimo__岡田__2026-04-18": "rest",
+    "shimo__岡田__2026-04-19": "rest",
+    "shimo__岡田__2026-04-20": "rest",
+    "higashi__安藤__2026-04-01": "work",
+    "higashi__安藤__2026-04-02": "work",
+    "higashi__安藤__2026-04-03": "work",
+    "higashi__安藤__2026-04-04": "work",
+    "higashi__安藤__2026-04-05": "work",
+    "higashi__安藤__2026-04-06": "rest",
+    "higashi__安藤__2026-04-07": "kosei",
+    "higashi__安藤__2026-04-08": "work",
+    "higashi__安藤__2026-04-09": "work",
+    "higashi__安藤__2026-04-10": "work",
+    "higashi__安藤__2026-04-11": "work",
+    "higashi__安藤__2026-04-12": "kosei",
+    "higashi__安藤__2026-04-13": "rest",
+    "higashi__安藤__2026-04-14": "work",
+    "higashi__安藤__2026-04-15": "work",
+    "higashi__安藤__2026-04-16": "work",
+    "higashi__安藤__2026-04-17": "work",
+    "higashi__安藤__2026-04-18": "work",
+    "higashi__安藤__2026-04-19": "work",
+    "higashi__安藤__2026-04-20": "rest",
+    "higashi__伊熊__2026-04-01": "rest",
+    "higashi__伊熊__2026-04-02": "rest",
+    "higashi__伊熊__2026-04-03": "rest",
+    "higashi__伊熊__2026-04-04": "work",
+    "higashi__伊熊__2026-04-05": "work",
+    "higashi__伊熊__2026-04-06": "work",
+    "higashi__伊熊__2026-04-07": "work",
+    "higashi__伊熊__2026-04-08": "rest",
+    "higashi__伊熊__2026-04-09": "rest",
+    "higashi__伊熊__2026-04-10": "rest",
+    "higashi__伊熊__2026-04-11": "rest",
+    "higashi__伊熊__2026-04-12": "work",
+    "higashi__伊熊__2026-04-13": "work",
+    "higashi__伊熊__2026-04-14": "rest",
+    "higashi__伊熊__2026-04-15": "rest",
+    "higashi__伊熊__2026-04-16": "rest",
+    "higashi__伊熊__2026-04-17": "rest",
+    "higashi__伊熊__2026-04-18": "work",
+    "higashi__伊熊__2026-04-19": "work",
+    "higashi__伊熊__2026-04-20": "work",
+    "higashi__鈴木__2026-04-01": "work",
+    "higashi__鈴木__2026-04-02": "work",
+    "higashi__鈴木__2026-04-03": "kosei",
+    "higashi__鈴木__2026-04-04": "hope",
+    "higashi__鈴木__2026-04-05": "work",
+    "higashi__鈴木__2026-04-06": "work",
+    "higashi__鈴木__2026-04-07": "work",
+    "higashi__鈴木__2026-04-08": "work",
+    "higashi__鈴木__2026-04-09": "work",
+    "higashi__鈴木__2026-04-10": "work",
+    "higashi__鈴木__2026-04-11": "rest",
+    "higashi__鈴木__2026-04-12": "work",
+    "higashi__鈴木__2026-04-13": "work",
+    "higashi__鈴木__2026-04-14": "work",
+    "higashi__鈴木__2026-04-15": "work",
+    "higashi__鈴木__2026-04-16": "work",
+    "higashi__鈴木__2026-04-17": "kosei",
+    "higashi__鈴木__2026-04-18": "rest",
+    "higashi__鈴木__2026-04-19": "work",
+    "higashi__鈴木__2026-04-20": "work",
+    "higashi__中川__2026-04-01": "work",
+    "higashi__中川__2026-04-02": "rest",
+    "higashi__中川__2026-04-03": "work",
+    "higashi__中川__2026-04-04": "work",
+    "higashi__中川__2026-04-05": "work",
+    "higashi__中川__2026-04-06": "work",
+    "higashi__中川__2026-04-07": "work",
+    "higashi__中川__2026-04-08": "work",
+    "higashi__中川__2026-04-09": "rest",
+    "higashi__中川__2026-04-10": "work",
+    "higashi__中川__2026-04-11": "work",
+    "higashi__中川__2026-04-12": "work",
+    "higashi__中川__2026-04-13": "work",
+    "higashi__中川__2026-04-14": "work",
+    "higashi__中川__2026-04-15": "kosei",
+    "higashi__中川__2026-04-16": "rest",
+    "higashi__中川__2026-04-17": "work",
+    "higashi__中川__2026-04-18": "kosei",
+    "higashi__中川__2026-04-19": "kosei",
+    "higashi__中川__2026-04-20": "work",
+    "higashi__花高__2026-04-01": "work",
+    "higashi__花高__2026-04-02": "work",
+    "higashi__花高__2026-04-03": "work",
+    "higashi__花高__2026-04-04": "work",
+    "higashi__花高__2026-04-05": "work",
+    "higashi__花高__2026-04-06": "rest",
+    "higashi__花高__2026-04-07": "work",
+    "higashi__花高__2026-04-08": "work",
+    "higashi__花高__2026-04-09": "work",
+    "higashi__花高__2026-04-10": "work",
+    "higashi__花高__2026-04-11": "work",
+    "higashi__花高__2026-04-12": "work",
+    "higashi__花高__2026-04-13": "rest",
+    "higashi__花高__2026-04-14": "work",
+    "higashi__花高__2026-04-15": "work",
+    "higashi__花高__2026-04-16": "work",
+    "higashi__花高__2026-04-17": "work",
+    "higashi__花高__2026-04-18": "work",
+    "higashi__花高__2026-04-19": "work",
+    "higashi__花高__2026-04-20": "rest",
+    "higashi__平松__2026-04-01": "work",
+    "higashi__平松__2026-04-02": "work",
+    "higashi__平松__2026-04-03": "work",
+    "higashi__平松__2026-04-04": "work",
+    "higashi__平松__2026-04-05": "rest",
+    "higashi__平松__2026-04-06": "work",
+    "higashi__平松__2026-04-07": "work",
+    "higashi__平松__2026-04-08": "kosei",
+    "higashi__平松__2026-04-09": "work",
+    "higashi__平松__2026-04-10": "work",
+    "higashi__平松__2026-04-11": "work",
+    "higashi__平松__2026-04-12": "rest",
+    "higashi__平松__2026-04-13": "work",
+    "higashi__平松__2026-04-14": "work",
+    "higashi__平松__2026-04-15": "work",
+    "higashi__平松__2026-04-16": "work",
+    "higashi__平松__2026-04-17": "work",
+    "higashi__平松__2026-04-18": "work",
+    "higashi__平松__2026-04-19": "rest",
+    "higashi__平松__2026-04-20": "work",
+    "higashi__松本__2026-04-01": "work",
+    "higashi__松本__2026-04-02": "work",
+    "higashi__松本__2026-04-03": "work",
+    "higashi__松本__2026-04-04": "work",
+    "higashi__松本__2026-04-05": "rest",
+    "higashi__松本__2026-04-06": "work",
+    "higashi__松本__2026-04-07": "work",
+    "higashi__松本__2026-04-08": "work",
+    "higashi__松本__2026-04-09": "work",
+    "higashi__松本__2026-04-10": "kosei",
+    "higashi__松本__2026-04-11": "work",
+    "higashi__松本__2026-04-12": "rest",
+    "higashi__松本__2026-04-13": "kosei",
+    "higashi__松本__2026-04-14": "work",
+    "higashi__松本__2026-04-15": "work",
+    "higashi__松本__2026-04-16": "work",
+    "higashi__松本__2026-04-17": "work",
+    "higashi__松本__2026-04-18": "work",
+    "higashi__松本__2026-04-19": "rest",
+    "higashi__松本__2026-04-20": "work",
+    "higashi__森__2026-04-01": "kosei",
+    "higashi__森__2026-04-02": "work",
+    "higashi__森__2026-04-03": "work",
+    "higashi__森__2026-04-04": "work",
+    "higashi__森__2026-04-05": "rest",
+    "higashi__森__2026-04-06": "kosei",
+    "higashi__森__2026-04-07": "work",
+    "higashi__森__2026-04-08": "work",
+    "higashi__森__2026-04-09": "work",
+    "higashi__森__2026-04-10": "work",
+    "higashi__森__2026-04-11": "work",
+    "higashi__森__2026-04-12": "rest",
+    "higashi__森__2026-04-13": "work",
+    "higashi__森__2026-04-14": "work",
+    "higashi__森__2026-04-15": "work",
+    "higashi__森__2026-04-16": "work",
+    "higashi__森__2026-04-17": "work",
+    "higashi__森__2026-04-18": "work",
+    "higashi__森__2026-04-19": "rest",
+    "higashi__森__2026-04-20": "kosei",
+    "higashi__久保田__2026-04-01": "work",
+    "higashi__久保田__2026-04-02": "work",
+    "higashi__久保田__2026-04-03": "work",
+    "higashi__久保田__2026-04-04": "rest",
+    "higashi__久保田__2026-04-05": "rest",
+    "higashi__久保田__2026-04-06": "rest",
+    "higashi__久保田__2026-04-07": "rest",
+    "higashi__久保田__2026-04-08": "work",
+    "higashi__久保田__2026-04-09": "work",
+    "higashi__久保田__2026-04-10": "work",
+    "higashi__久保田__2026-04-11": "rest",
+    "higashi__久保田__2026-04-12": "rest",
+    "higashi__久保田__2026-04-13": "rest",
+    "higashi__久保田__2026-04-14": "rest",
+    "higashi__久保田__2026-04-15": "work",
+    "higashi__久保田__2026-04-16": "work",
+    "higashi__久保田__2026-04-17": "work",
+    "higashi__久保田__2026-04-18": "rest",
+    "higashi__久保田__2026-04-19": "rest",
+    "higashi__久保田__2026-04-20": "rest",
+    "higashi__村井__2026-04-01": "rest",
+    "higashi__村井__2026-04-02": "rest",
+    "higashi__村井__2026-04-03": "rest",
+    "higashi__村井__2026-04-04": "rest",
+    "higashi__村井__2026-04-05": "rest",
+    "higashi__村井__2026-04-06": "rest",
+    "higashi__村井__2026-04-07": "rest",
+    "higashi__村井__2026-04-08": "rest",
+    "higashi__村井__2026-04-09": "rest",
+    "higashi__村井__2026-04-10": "rest",
+    "higashi__村井__2026-04-11": "work",
+    "higashi__村井__2026-04-12": "work",
+    "higashi__村井__2026-04-13": "rest",
+    "higashi__村井__2026-04-14": "rest",
+    "higashi__村井__2026-04-15": "rest",
+    "higashi__村井__2026-04-16": "rest",
+    "higashi__村井__2026-04-17": "rest",
+    "higashi__村井__2026-04-18": "work",
+    "higashi__村井__2026-04-19": "work",
+    "higashi__村井__2026-04-20": "rest"
+  };
+
+  for (const [key, value] of Object.entries(shifts)) {
+    data.shifts[key] = value;
+  }
+
+  data._migrated_april2026_from_sheet = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
+// ===== 村井：土日以外を休（黒）に設定（2026年4月・5月）=====
+(function applyMuraiWeekdayRest2026() {
+  if (data._migrated_murai_weekday_rest2026) return;
+  [[2026,4,30],[2026,5,31]].forEach(([y,m,days]) => {
+    for (let d = 1; d <= days; d++) {
+      const dow = new Date(y, m-1, d).getDay(); // 0=日, 6=土
+      if (dow !== 0 && dow !== 6) {
+        const key = `higashi__村井__${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        data.shifts[key] = 'rest';
+      }
+    }
+  });
+  data._migrated_murai_weekday_rest2026 = true;
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+})();
+
+let currentYear  = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+
+// ===== Undo/Redo 履歴 =====
+let history = [];   // [{key, before, after}]
+let historyIdx = -1;
+const MAX_HISTORY = 100;
+
+function pushHistory(key, before, after) {
+  // 現在位置より先の履歴を切り捨て
+  history = history.slice(0, historyIdx + 1);
+  history.push({ key, before, after });
+  if (history.length > MAX_HISTORY) history.shift();
+  historyIdx = history.length - 1;
+  updateUndoRedoButtons();
+}
+
+// バッチ（一括変更）を1つの履歴エントリとして積む
+function pushBatchHistory(changes) {
+  if (!changes.length) return;
+  history = history.slice(0, historyIdx + 1);
+  history.push({ batch: changes }); // changes = [{key, before, after}, ...]
+  if (history.length > MAX_HISTORY) history.shift();
+  historyIdx = history.length - 1;
+  updateUndoRedoButtons();
+}
+
+function undo() {
+  if (historyIdx < 0) return;
+  const h = history[historyIdx];
+  historyIdx--;
+  if (h.batch) {
+    h.batch.forEach(c => {
+      data.shifts[c.key] = c.before;
+      refreshSelectByKey(c.key, c.before);
+    });
+  } else {
+    data.shifts[h.key] = h.before;
+    refreshSelectByKey(h.key, h.before);
+  }
+  updateAllCountRows(getDaysInMonth(currentYear, currentMonth));
+  updateUndoRedoButtons();
+}
+
+function redo() {
+  if (historyIdx >= history.length - 1) return;
+  historyIdx++;
+  const h = history[historyIdx];
+  if (h.batch) {
+    h.batch.forEach(c => {
+      data.shifts[c.key] = c.after;
+      refreshSelectByKey(c.key, c.after);
+    });
+  } else {
+    data.shifts[h.key] = h.after;
+    refreshSelectByKey(h.key, h.after);
+  }
+  updateAllCountRows(getDaysInMonth(currentYear, currentMonth));
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  document.getElementById('btn-undo').disabled = historyIdx < 0;
+  document.getElementById('btn-redo').disabled = historyIdx >= history.length - 1;
+}
+
+function applyBg(sel, sid) {
+  const s = getStatus(sid);
+  if (!sel.parentElement) return;
+  const td = sel.parentElement;
+  if (td.classList.contains('out-of-range')) return;
+  if (s.bg) {
+    td.style.background = s.bg;
+  } else {
+    // streak クラスがあればインラインをリセットしてCSS側に任せる
+    td.style.background = '';
+  }
+}
+
+function refreshSelectByKey(key, sid) {
+  const el = document.querySelector(`select[data-key="${CSS.escape(key)}"]`);
+  if (!el) return;
+  el.value = sid;
+  el.style.color = getStatus(sid).color;
+  applyBg(el, sid);
+}
+
+// Ctrl+Z / Ctrl+Y
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
+});
+
+// ===== 編集範囲（跨月対応） =====
+function initRangeMonthSelects() {
+  ['range-start-month', 'range-end-month'].forEach((id, idx) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value ? parseInt(sel.value) : null;
+    sel.innerHTML = '';
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m + '月';
+      sel.appendChild(opt);
+    }
+    if (current) {
+      sel.value = current;
+    } else {
+      if (idx === 0) sel.value = currentMonth;
+      else sel.value = currentMonth < 12 ? currentMonth + 1 : 1;
+    }
+  });
+}
+
+function getRangeStart() {
+  return {
+    month: parseInt(document.getElementById('range-start-month').value) || currentMonth,
+    day:   parseInt(document.getElementById('range-start-day').value)   || 1
+  };
+}
+function getRangeEnd() {
+  return {
+    month: parseInt(document.getElementById('range-end-month').value) || currentMonth,
+    day:   parseInt(document.getElementById('range-end-day').value)   || 31
+  };
+}
+function isInRange(d) {
+  const s = getRangeStart(), e = getRangeEnd();
+  const cur   = currentMonth * 100 + d;
+  const start = s.month * 100 + s.day;
+  const end   = e.month * 100 + e.day;
+  return cur >= start && cur <= end;
+}
+
+function saveRangeSettings() {
+  renderShiftTables();
+}
+
+function rangeReset() {
+  const s = getRangeStart(), e = getRangeEnd();
+  if (!confirm(`${currentYear}年 ${s.month}/${s.day}〜${e.month}/${e.day} のステータスをリセットします。\n範囲外のデータは変わりません。よろしいですか？`)) return;
+  const changes = [];
+  for (let m = s.month; m <= e.month; m++) {
+    const days = getDaysInMonth(currentYear, m);
+    const startDay = (m === s.month) ? s.day : 1;
+    const endDay   = (m === e.month) ? Math.min(e.day, days) : days;
+    data.centers.forEach(center => {
+      getActiveStaff(center).forEach(name => {
+        for (let d = startDay; d <= endDay; d++) {
+          const key = shiftKey(center.id, name, currentYear, m, d);
+          const before = data.shifts[key] || 'work';
+          if (before !== 'work') {
+            changes.push({ key, before, after: 'work' });
+            data.shifts[key] = 'work';
+          }
+        }
+      });
+    });
+  }
+  pushBatchHistory(changes);
+  renderShiftTables();
+}
+
+// ===== ユーティリティ =====
+function getDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+function getDow(y, m, d) { return new Date(y, m-1, d).getDay(); }
+function shiftKey(cid, name, y, m, d) { return `${cid}__${name}__${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function getShiftId(cid, name, y, m, d) { return data.shifts[shiftKey(cid,name,y,m,d)] || 'work'; }
+function setShiftId(cid, name, y, m, d, sid) { data.shifts[shiftKey(cid,name,y,m,d)] = sid; }
+function getStatus(sid) { return data.statusList.find(s => s.id === sid) || data.statusList[0]; }
+
+function isStaffActive(centerId, name, year, month) {
+  const from = data.staffFrom[centerId + '__' + name];
+  if (!from) return true;
+  return year > from.year || (year === from.year && month >= from.month);
+}
+function getActiveStaff(center) {
+  return center.staff.filter(name => isStaffActive(center.id, name, currentYear, currentMonth));
+}
+
+// ===== 祝日データ（内閣府公式） =====
+const HOLIDAYS = new Set([
+  // 2025年
+  '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
+  '2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05',
+  '2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-23',
+  '2025-10-13','2025-11-03','2025-11-23','2025-11-24',
+  // 2026年
+  '2026-01-01','2026-01-12','2026-02-11','2026-02-23',
+  '2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06',
+  '2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23',
+  '2026-10-12','2026-11-03','2026-11-23',
+  // 2027年
+  '2027-01-01','2027-01-11','2027-02-11','2027-02-23',
+  '2027-03-21','2027-03-22','2027-04-29','2027-05-03','2027-05-04','2027-05-05',
+  '2027-07-19','2027-08-11','2027-09-20','2027-09-23',
+  '2027-10-11','2027-11-03','2027-11-23',
+]);
+
+function isHoliday(y, m, d) {
+  const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  return HOLIDAYS.has(key);
+}
+
+function isRest(sid) {
+  return sid === 'rest' || sid === 'hope';
+}
+
+function buildStreakDays(centerId, staffName, year, month) {
+  const allDays = [];
+  const addMonth = (y, m) => {
+    for (let i = 1; i <= getDaysInMonth(y, m); i++) {
+      const sid = getShiftId(centerId, staffName, y, m, i);
+      const dk = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+      allDays.push({ dk, rest: isRest(sid), cur: (y === year && m === month) });
+    }
+  };
+  const prev = month === 1 ? { y: year-1, m: 12 } : { y: year, m: month-1 };
+  const next = month === 12 ? { y: year+1, m: 1 } : { y: year, m: month+1 };
+  addMonth(prev.y, prev.m); addMonth(year, month); addMonth(next.y, next.m);
+  return allDays;
+}
+
+function getStreakContaining(centerId, staffName, year, month, day) {
+  const targetDk = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const allDays = buildStreakDays(centerId, staffName, year, month);
+  let streak = [];
+  for (const d of allDays) {
+    if (d.rest) {
+      if (streak.length > 6 && streak.some(s => s.dk === targetDk)) return streak.map(s => s.dk);
+      streak = [];
+    } else {
+      streak.push(d);
+    }
+  }
+  if (streak.length > 6 && streak.some(s => s.dk === targetDk)) return streak.map(s => s.dk);
+  return [];
+}
+
+function getStreakWarningDays(centerId, staffName, year, month) {
+  const warnings = new Set();
+  const allDays = buildStreakDays(centerId, staffName, year, month);
+  const rangeEnd = getRangeEnd();
+  const rangeEndDk = `${currentYear}-${String(rangeEnd.month).padStart(2,'0')}-${String(rangeEnd.day).padStart(2,'0')}`;
+
+  const checkStreak = (streak) => {
+    if (streak.length <= 6) return;
+    // 編集範囲終了日以降を除いた連勤数が6以下なら警告なし
+    const inRangeCount = streak.filter(s => s.dk <= rangeEndDk).length;
+    if (inRangeCount <= 6) return;
+    streak.filter(s => s.cur).forEach(s => warnings.add(s.dk));
+  };
+
+  let streak = [];
+  for (const day of allDays) {
+    if (day.rest) {
+      checkStreak(streak);
+      streak = [];
+    } else {
+      streak.push(day);
+    }
+  }
+  checkStreak(streak);
+  return warnings;
+}
+
+function getTarget(centerId, year, month, day) {
+  const t = data.targets && data.targets[centerId];
+  if (!t) return null;
+  const dateKey = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  if (t.overrides && t.overrides[dateKey] !== undefined) return t.overrides[dateKey];
+  const monthKey = `${year}-${String(month).padStart(2,'0')}`;
+  const dow = getDow(year, month, day);
+  if (t.dow && t.dow[monthKey] && t.dow[monthKey][dow] !== undefined) return t.dow[monthKey][dow];
+  return null;
+}
+
+function countWorking(center, d) {
+  const otherCenterIds = data.centers.filter(c => c.id !== center.id).map(c => c.id);
+
+  // 自拠点スタッフ：休みでも他拠点ヘルプでもない人
+  const selfWorking = getActiveStaff(center).filter(name => {
+    const sid = getShiftId(center.id, name, currentYear, currentMonth, d);
+    if (isRest(sid)) return false;
+    if (otherCenterIds.includes(sid)) return false;
+    return true;
+  }).length;
+
+  // 他拠点から来た応援：他拠点スタッフのステータスIDがこの拠点IDと一致
+  const helpers = data.centers
+    .filter(c => c.id !== center.id)
+    .reduce((sum, otherCenter) => {
+      return sum + getActiveStaff(otherCenter).filter(name => {
+        const sid = getShiftId(otherCenter.id, name, currentYear, currentMonth, d);
+        return sid === center.id;
+      }).length;
+    }, 0);
+
+  return selfWorking + helpers;
+}
+
+
+// ===== 描画 =====
+function renderAll() {
+  document.getElementById('monthLabel').textContent = `${currentYear}年${currentMonth}月`;
+  initRangeMonthSelects();
+  renderLegend();
+  renderShiftTables();
+}
+
+function renderLegend() {
+  const area = document.getElementById('legend-area');
+  area.innerHTML = '';
+  data.statusList.forEach(s => {
+    const sp = document.createElement('span');
+    sp.style.cssText = 'display:flex;align-items:center;gap:4px;';
+    const dot = document.createElement('span');
+    dot.className = 'color-dot';
+    dot.style.background = s.color;
+    sp.appendChild(dot);
+    const lbl = s.id==='work' ? '出勤' : s.id==='hope' ? '休(希望)' : s.label;
+    sp.appendChild(document.createTextNode(lbl));
+    area.appendChild(sp);
+  });
+}
+
+function renderShiftTables() {
+  const container = document.getElementById('shift-tables');
+  container.innerHTML = '';
+  const days = getDaysInMonth(currentYear, currentMonth);
+  const dayNames = ['日','月','火','水','木','金','土'];
+
+  // 全拠点を1つのスクロールコンテナに入れる
+  const scrollContainer = document.createElement('div');
+  scrollContainer.className = 'scroll-container';
+
+  data.centers.forEach((center, centerIndex) => {
+    const block = document.createElement('div');
+    block.className = 'center-block';
+    const titleRow = document.createElement('div');
+    titleRow.style.cssText = 'position:relative;margin-bottom:4px;';
+    const title = document.createElement('div');
+    title.className = 'center-title';
+    title.style.marginBottom = '0';
+    title.textContent = center.name;
+    const centerColors = { kosei: '#92400e', shimo: '#991b1b', higashi: '#166534' };
+    const centerBgs    = { kosei: '#fef9c3', shimo: '#fee2e2', higashi: '#dcfce7' };
+    title.style.color      = centerColors[center.id] || '#92400e';
+    title.style.background = centerBgs[center.id]    || '#fef9c3';
+    titleRow.appendChild(title);
+    if (centerIndex === 0) {
+      const monthLbl = document.createElement('div');
+      monthLbl.style.cssText = 'position:absolute;left:429px;top:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;pointer-events:none;';
+      monthLbl.textContent = `${currentYear}年${currentMonth}月`;
+      titleRow.appendChild(monthLbl);
+    }
+    block.appendChild(titleRow);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    const table = document.createElement('table');
+
+    // ヘッダー
+    const trH = document.createElement('tr');
+    const th0 = document.createElement('th');
+    th0.textContent = 'スタッフ';
+    th0.className = 'name-col';
+    trH.appendChild(th0);
+    for (let d = 1; d <= days; d++) {
+      const dow = getDow(currentYear, currentMonth, d);
+      const hol = isHoliday(currentYear, currentMonth, d);
+      const th = document.createElement('th');
+      const isRed = dow === 0 || hol;
+      th.innerHTML = `<div style="font-size:11px;${dow===6?'color:var(--sat)':isRed?'color:var(--sun)':''}">${d}<br><span style="font-size:10px">${dayNames[dow]}</span></div>`;
+      if (dow===6) th.classList.add('sat-col');
+      if (isRed && dow!==6) th.classList.add('hol-col');
+      if (dow===0) th.classList.add('sun-col');
+      trH.appendChild(th);
+    }
+    table.appendChild(trH);
+
+    // スタッフ行
+    getActiveStaff(center).forEach(name => {
+      const tr = document.createElement('tr');
+      const tdN = document.createElement('td');
+      tdN.className = 'name-col';
+      tdN.textContent = name;
+      tr.appendChild(tdN);
+      const warnDays = getStreakWarningDays(center.id, name, currentYear, currentMonth);
+      for (let d = 1; d <= days; d++) {
+        const dow = getDow(currentYear, currentMonth, d);
+        const hol = isHoliday(currentYear, currentMonth, d);
+        const td = document.createElement('td');
+        if (dow===6) td.classList.add('sat-col');
+        if (dow===0) td.classList.add('sun-col');
+        if (hol && dow!==0 && dow!==6) td.classList.add('hol-col');
+        if (!isInRange(d)) td.classList.add('out-of-range');
+        const dayKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const ackKey = `${center.id}__${name}__${dayKey}`;
+        const isWarn = warnDays.has(dayKey);
+        const isAck  = !!(data.streakAck && data.streakAck[ackKey]);
+        if (!td.classList.contains('out-of-range')) {
+          if (isAck)       td.classList.add('streak-ack');
+          else if (isWarn) td.classList.add('streak-warn');
+        }
+        const sid = getShiftId(center.id, name, currentYear, currentMonth, d);
+        const key = shiftKey(center.id, name, currentYear, currentMonth, d);
+        td.appendChild(buildSelect(sid, newSid => {
+          setShiftId(center.id, name, currentYear, currentMonth, d, newSid);
+          updateAllCountRows(days);
+          refreshAllStreakWarnings();
+        }, key, d));
+        if ((isWarn || isAck) && !td.classList.contains('out-of-range')) {
+          td.style.position = 'relative';
+          const dot = document.createElement('div');
+          dot.className = 'streak-dot';
+          dot.style.cssText = `position:absolute;top:1px;right:1px;width:6px;height:6px;border-radius:50%;cursor:pointer;z-index:5;background:${isAck ? 'rgba(107,114,128,0.5)' : 'rgba(234,88,12,0.9)'};`;
+          dot.title = isAck ? 'クリックで警告に戻す' : 'クリックで了承済みにする';
+          dot.addEventListener('click', e => {
+            e.stopPropagation();
+            if (!data.streakAck) data.streakAck = {};
+            const streakKeys = getStreakContaining(center.id, name, currentYear, currentMonth, d);
+            const allAcked = streakKeys.every(dk => data.streakAck[`${center.id}__${name}__${dk}`]);
+            streakKeys.forEach(dk => {
+              const ak = `${center.id}__${name}__${dk}`;
+              if (allAcked) delete data.streakAck[ak];
+              else data.streakAck[ak] = true;
+            });
+            localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+            refreshAllStreakWarnings();
+          });
+          td.appendChild(dot);
+        }
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    });
+
+    // 稼働数行
+    const trC = document.createElement('tr');
+    trC.className = 'count-row';
+    const tdCN = document.createElement('td');
+    tdCN.className = 'name-col';
+    tdCN.textContent = '稼働数';
+    trC.appendChild(tdCN);
+    for (let d = 1; d <= days; d++) {
+      const dow = getDow(currentYear, currentMonth, d);
+      const hol = isHoliday(currentYear, currentMonth, d);
+      const td = document.createElement('td');
+      td.id = `cnt-${center.id}-${d}`;
+      if (dow===6) td.classList.add('sat-col');
+      if (dow===0) td.classList.add('sun-col');
+      if (hol && dow!==0 && dow!==6) td.classList.add('hol-col');
+      trC.appendChild(td);
+    }
+    table.appendChild(trC);
+
+    wrap.appendChild(table);
+    block.appendChild(wrap);
+    scrollContainer.appendChild(block);
+  });
+
+  container.appendChild(scrollContainer);
+
+  // DOM追加後に稼働数を計算
+  data.centers.forEach(center => updateCountRow(center, days));
+}
+
+function buildSelect(currentSid, onChange, key, d) {
+  const sel = document.createElement('select');
+  sel.setAttribute('data-key', key);
+  data.statusList.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    if (s.id === 'work') opt.textContent = '　';
+    else if (s.id === 'hope') opt.textContent = '休';
+    else opt.textContent = s.label;
+    if (s.id === currentSid) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.style.color = getStatus(currentSid).color;
+
+  // 編集範囲外はグレーアウト＆無効化
+  if (!isInRange(d)) {
+    sel.disabled = true;
+    sel.style.opacity = '0.35';
+    sel.style.cursor = 'not-allowed';
+  }
+
+  // 初期背景色はDOMに追加後に適用するため遅延
+  setTimeout(() => applyBg(sel, currentSid), 0);
+
+  sel.addEventListener('change', function() {
+    const before = data.shifts[key] || 'work';
+    const after = this.value;
+    this.style.color = getStatus(after).color;
+    applyBg(this, after);
+    pushHistory(key, before, after);
+    onChange(after);
+  });
+  return sel;
+}
+
+function updateCountRow(center, days) {
+  for (let d = 1; d <= days; d++) {
+    const td = document.getElementById(`cnt-${center.id}-${d}`);
+    if (!td) continue;
+    const count = countWorking(center, d);
+    td.textContent = count;
+    const target = getTarget(center.id, currentYear, currentMonth, d);
+    if (target === null) {
+      td.style.background = '#1a1d27';
+      td.style.color = '#ffffff';
+    } else if (count < target) {
+      td.style.background = 'rgba(220,38,38,0.35)';
+      td.style.color = '';
+    } else if (count === target) {
+      td.style.background = '';
+      td.style.color = '';
+    } else {
+      td.style.background = 'rgba(22,163,74,0.35)';
+      td.style.color = '';
+    }
+  }
+}
+
+function updateAllCountRows(days) {
+  data.centers.forEach(center => updateCountRow(center, days));
+}
+
+function refreshAllStreakWarnings() {
+  const days = getDaysInMonth(currentYear, currentMonth);
+  let ackChanged = false;
+  data.centers.forEach(center => {
+    getActiveStaff(center).forEach(name => {
+      const warnDays = getStreakWarningDays(center.id, name, currentYear, currentMonth);
+      for (let d = 1; d <= days; d++) {
+        const dayKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const ackKey = `${center.id}__${name}__${dayKey}`;
+        const sel = document.querySelector(`select[data-key="${CSS.escape(shiftKey(center.id, name, currentYear, currentMonth, d))}"]`);
+        if (!sel) continue;
+        const td = sel.parentElement;
+        if (!td || td.classList.contains('out-of-range')) continue;
+
+        const isWarn = warnDays.has(dayKey);
+        const isAck  = !!(data.streakAck && data.streakAck[ackKey]);
+
+        // 連勤解消時は了承フラグも自動クリア
+        if (!isWarn && isAck) {
+          delete data.streakAck[ackKey];
+          ackChanged = true;
+        }
+
+        // クラス更新
+        td.classList.remove('streak-warn', 'streak-ack');
+        td.querySelector('.streak-dot')?.remove();
+        td.style.position = '';
+
+        const nowAck = !isWarn ? false : !!(data.streakAck && data.streakAck[ackKey]);
+        if (isWarn) {
+          if (nowAck) td.classList.add('streak-ack');
+          else        td.classList.add('streak-warn');
+
+          td.style.position = 'relative';
+          const dot = document.createElement('div');
+          dot.className = 'streak-dot';
+          dot.style.cssText = `position:absolute;top:1px;right:1px;width:6px;height:6px;border-radius:50%;cursor:pointer;z-index:5;background:${nowAck ? 'rgba(107,114,128,0.5)' : 'rgba(234,88,12,0.9)'};`;
+          dot.title = nowAck ? 'クリックで警告に戻す' : 'クリックで了承済みにする';
+          dot.addEventListener('click', e => {
+            e.stopPropagation();
+            if (!data.streakAck) data.streakAck = {};
+            const streakKeys = getStreakContaining(center.id, name, currentYear, currentMonth, d);
+            const allAcked = streakKeys.every(dk => data.streakAck[`${center.id}__${name}__${dk}`]);
+            streakKeys.forEach(dk => {
+              const ak = `${center.id}__${name}__${dk}`;
+              if (allAcked) delete data.streakAck[ak];
+              else data.streakAck[ak] = true;
+            });
+            localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+            refreshAllStreakWarnings();
+          });
+          td.appendChild(dot);
+        }
+        applyBg(sel, sel.value);
+      }
+    });
+  });
+  if (ackChanged) localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+}
+
+// ===== スタッフ管理 =====
+function renderStaffMgr() {
+  const container = document.getElementById('center-staff-mgr');
+  container.innerHTML = '';
+  data.centers.forEach((center, ci) => {
+    const div = document.createElement('div');
+    div.className = 'mgr-card';
+    div.innerHTML = `<h3>📍 ${center.name}</h3>
+      <p style="font-size:10px;color:var(--muted);margin-bottom:10px;">名前をクリックで編集、↑↓で並べ替え</p>
+      <div class="tag-list" id="stafflist-${ci}"></div>
+      <div class="add-row">
+        <input type="text" id="newinput-${ci}" placeholder="スタッフ名" style="width:120px;" />
+        <button class="btn" onclick="addStaff(${ci})">追加</button>
+      </div>`;
+    container.appendChild(div);
+    const list = document.getElementById(`stafflist-${ci}`);
+    center.staff.forEach((name, si) => {
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+
+      const btnUp = document.createElement('button');
+      btnUp.textContent = '↑';
+      btnUp.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:0 2px;line-height:1;';
+      btnUp.disabled = si === 0;
+      btnUp.onclick = () => moveStaff(ci, si, -1);
+
+      const btnDown = document.createElement('button');
+      btnDown.textContent = '↓';
+      btnDown.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:0 2px;line-height:1;';
+      btnDown.disabled = si === center.staff.length - 1;
+      btnDown.onclick = () => moveStaff(ci, si, 1);
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = name;
+      nameSpan.style.cssText = 'cursor:pointer;border-bottom:1px dashed var(--border);';
+      nameSpan.title = 'クリックで名前を編集';
+      nameSpan.onclick = () => startRenameStaff(ci, si, tag, nameSpan);
+
+      const fromInfo = data.staffFrom[center.id + '__' + name];
+      if (fromInfo) {
+        const fromSpan = document.createElement('span');
+        fromSpan.style.cssText = 'font-size:10px;color:var(--muted);';
+        fromSpan.textContent = `(${fromInfo.year}/${fromInfo.month}月〜)`;
+        tag.appendChild(btnUp);
+        tag.appendChild(btnDown);
+        tag.appendChild(nameSpan);
+        tag.appendChild(fromSpan);
+      } else {
+        tag.appendChild(btnUp);
+        tag.appendChild(btnDown);
+        tag.appendChild(nameSpan);
+      }
+
+      const removeBtn = document.createElement('span');
+      removeBtn.className = 'remove';
+      removeBtn.textContent = '×';
+      removeBtn.onclick = () => removeStaff(ci, si);
+      tag.appendChild(removeBtn);
+
+      list.appendChild(tag);
+    });
+  });
+}
+
+function startRenameStaff(ci, si, tag, nameSpan) {
+  const oldName = data.centers[ci].staff[si];
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = oldName;
+  input.style.cssText = 'width:80px;font-size:12px;border:1px solid var(--accent);border-radius:4px;padding:2px 4px;background:var(--surface2);color:var(--text);';
+  tag.replaceChild(input, nameSpan);
+  input.focus();
+  input.select();
+
+  let committed = false;
+  const commit = () => {
+    if (committed) return;
+    committed = true;
+    const newName = input.value.trim();
+    if (!newName || newName === oldName) { renderStaffMgr(); return; }
+    if (data.centers[ci].staff.some((n, i) => n === newName && i !== si)) { alert('同じ名前が既にいます'); renderStaffMgr(); return; }
+    renameStaff(ci, si, oldName, newName);
+  };
+
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { input.blur(); }
+    if (e.key === 'Escape') { committed = true; renderStaffMgr(); }
+  });
+}
+
+function renameStaff(ci, si, oldName, newName) {
+  const centerId = data.centers[ci].id;
+  data.centers[ci].staff[si] = newName;
+  const fromKey = centerId + '__' + oldName;
+  if (data.staffFrom[fromKey]) {
+    data.staffFrom[centerId + '__' + newName] = data.staffFrom[fromKey];
+    delete data.staffFrom[fromKey];
+  }
+  const prefix = centerId + '__' + oldName + '__';
+  const newPrefix = centerId + '__' + newName + '__';
+  Object.keys(data.shifts).forEach(key => {
+    if (key.startsWith(prefix)) {
+      data.shifts[newPrefix + key.slice(prefix.length)] = data.shifts[key];
+      delete data.shifts[key];
+    }
+  });
+  saveData();
+  renderStaffMgr();
+  renderAll();
+}
+
+function moveStaff(ci, si, dir) {
+  const staff = data.centers[ci].staff;
+  const newSi = si + dir;
+  if (newSi < 0 || newSi >= staff.length) return;
+  [staff[si], staff[newSi]] = [staff[newSi], staff[si]];
+  saveData();
+  renderStaffMgr();
+  renderAll();
+}
+
+function addStaff(ci) {
+  const input = document.getElementById(`newinput-${ci}`);
+  const name = input.value.trim();
+  if (!name) return;
+  if (data.centers[ci].staff.includes(name)) { alert('同じ名前が既にいます'); return; }
+  data.centers[ci].staff.push(name);
+  data.staffFrom[data.centers[ci].id + '__' + name] = { year: currentYear, month: currentMonth };
+  input.value = '';
+  renderStaffMgr();
+  renderAll();
+}
+
+function removeStaff(ci, si) {
+  const name = data.centers[ci].staff[si];
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  data.centers[ci].staff.splice(si, 1);
+  delete data.staffFrom[data.centers[ci].id + '__' + name];
+  renderStaffMgr();
+  renderAll();
+}
+
+// ===== ステータス管理 =====
+function renderStatusMgr() {
+  const list = document.getElementById('status-tag-list');
+  list.innerHTML = '';
+  data.statusList.forEach((s, i) => {
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    const dot = document.createElement('span');
+    dot.className = 'color-dot';
+    dot.style.background = s.color;
+    tag.appendChild(dot);
+
+    let labelText = '';
+    if (s.id === 'work')  labelText = '出勤（空欄）';
+    else if (s.id === 'rest') labelText = '休（黒文字）';
+    else if (s.id === 'hope') labelText = '休（赤文字・希望休）';
+    else labelText = s.label;
+
+    tag.appendChild(document.createTextNode(' ' + labelText + ' '));
+    if (s.locked) {
+      const lk = document.createElement('span');
+      lk.className = 'locked';
+      lk.textContent = '🔒';
+      tag.appendChild(lk);
+    } else {
+      const rm = document.createElement('span');
+      rm.className = 'remove';
+      rm.textContent = '×';
+      rm.onclick = () => removeStatus(i);
+      tag.appendChild(rm);
+    }
+    list.appendChild(tag);
+  });
+}
+
+function addStatus() {
+  const label = document.getElementById('status-new-label').value.trim();
+  const color = document.getElementById('status-new-color').value;
+  if (!label) { alert('表示文字を入力してください'); return; }
+  data.statusList.push({ id: 'custom_' + Date.now(), label, color, locked: false });
+  document.getElementById('status-new-label').value = '';
+  renderStatusMgr();
+  renderAll();
+}
+
+function removeStatus(i) {
+  if (data.statusList[i].locked) return;
+  if (!confirm(`「${data.statusList[i].label}」を削除しますか？`)) return;
+  data.statusList.splice(i, 1);
+  renderStatusMgr();
+  renderAll();
+}
+
+// ===== 稼働設定 =====
+function renderTargetTab() {
+  const container = document.getElementById('target-mgr');
+  container.innerHTML = '';
+  const days = getDaysInMonth(currentYear, currentMonth);
+  const dayNames = ['日','月','火','水','木','金','土'];
+
+  data.centers.forEach(center => {
+    const t = data.targets[center.id];
+    const card = document.createElement('div');
+    card.className = 'mgr-card';
+
+    const h3Row = document.createElement('div');
+    h3Row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px;';
+    const h3 = document.createElement('h3');
+    h3.style.margin = '0';
+    h3.textContent = `📍 ${center.name}`;
+    const btnP = document.createElement('button');
+    btnP.style.cssText = 'background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:3px 8px;border-radius:6px;cursor:pointer;font-size:12px;';
+    btnP.textContent = '◀';
+    btnP.onclick = () => changeMonthTarget(-1);
+    const mLbl = document.createElement('span');
+    mLbl.style.cssText = 'font-size:13px;font-weight:700;min-width:72px;text-align:center;';
+    mLbl.textContent = `${currentYear}年${currentMonth}月`;
+    const btnN = document.createElement('button');
+    btnN.style.cssText = 'background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:3px 8px;border-radius:6px;cursor:pointer;font-size:12px;';
+    btnN.textContent = '▶';
+    btnN.onclick = () => changeMonthTarget(1);
+    h3Row.appendChild(h3);
+    h3Row.appendChild(btnP);
+    h3Row.appendChild(mLbl);
+    h3Row.appendChild(btnN);
+    card.appendChild(h3Row);
+
+    // 曜日別デフォルト
+    const dowLabel = document.createElement('div');
+    dowLabel.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:6px;';
+    dowLabel.textContent = '曜日別デフォルト目標人数';
+    card.appendChild(dowLabel);
+
+    const dowRow = document.createElement('div');
+    dowRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;';
+    [0,1,2,3,4,5,6].forEach(dow => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
+      const lbl = document.createElement('div');
+      lbl.style.cssText = `font-size:10px;font-weight:600;${dow===0?'color:var(--sun)':dow===6?'color:var(--sat)':'color:var(--muted)'}`;
+      lbl.textContent = dayNames[dow];
+      const mk = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.min = '0'; inp.max = '20';
+      inp.value = (t.dow[mk] && t.dow[mk][dow] !== undefined) ? t.dow[mk][dow] : '';
+      inp.placeholder = '-';
+      inp.style.cssText = 'width:42px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-size:13px;color:var(--text);';
+      const saveDow = () => {
+        const v = inp.value.trim();
+        if (!data.targets[center.id].dow[mk]) data.targets[center.id].dow[mk] = {};
+        if (v === '' || isNaN(parseInt(v))) { delete data.targets[center.id].dow[mk][dow]; }
+        else { data.targets[center.id].dow[mk][dow] = parseInt(v); }
+        localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+        renderTargetTab();
+        updateAllCountRows(getDaysInMonth(currentYear, currentMonth));
+      };
+      inp.addEventListener('change', saveDow);
+      const btnStyle = 'width:42px;height:22px;font-size:13px;line-height:1;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      const btnUp = document.createElement('button');
+      btnUp.textContent = '▲';
+      btnUp.style.cssText = btnStyle;
+      btnUp.addEventListener('click', () => {
+        const cur = parseInt(inp.value) || 0;
+        inp.value = Math.min(20, cur + 1);
+        saveDow();
+      });
+      const btnDn = document.createElement('button');
+      btnDn.textContent = '▼';
+      btnDn.style.cssText = btnStyle;
+      btnDn.addEventListener('click', () => {
+        const cur = parseInt(inp.value);
+        if (isNaN(cur) || cur <= 0) { inp.value = ''; } else { inp.value = cur - 1; }
+        saveDow();
+      });
+      wrap.appendChild(lbl);
+      wrap.appendChild(btnUp);
+      wrap.appendChild(inp);
+      wrap.appendChild(btnDn);
+      dowRow.appendChild(wrap);
+    });
+    card.appendChild(dowRow);
+
+    // カレンダー
+    const calLabel = document.createElement('div');
+    calLabel.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:6px;';
+    calLabel.textContent = `${currentYear}年${currentMonth}月（セルをクリックで個別上書き、空欄でクリア）`;
+    card.appendChild(calLabel);
+
+    const tbl = document.createElement('table');
+    tbl.className = 'target-cal';
+    const trH = document.createElement('tr');
+    dayNames.forEach((dn, i) => {
+      const th = document.createElement('th');
+      th.textContent = dn;
+      if (i===0) th.style.color = 'var(--sun)';
+      if (i===6) th.style.color = 'var(--sat)';
+      trH.appendChild(th);
+    });
+    tbl.appendChild(trH);
+
+    const firstDow = getDow(currentYear, currentMonth, 1);
+    let tr = document.createElement('tr');
+    let rowCount = 0;
+    for (let i = 0; i < firstDow; i++) {
+      const td = document.createElement('td'); td.className = 'empty-cell'; tr.appendChild(td);
+    }
+    for (let d = 1; d <= days; d++) {
+      const dow = getDow(currentYear, currentMonth, d);
+      const hol = isHoliday(currentYear, currentMonth, d);
+      const dateKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isOverride = t.overrides[dateKey] !== undefined;
+      const targetVal = getTarget(center.id, currentYear, currentMonth, d);
+
+      const td = document.createElement('td');
+      if (targetVal === null) td.classList.add('is-unset');
+      else if (isOverride) td.classList.add('is-override');
+
+      if (targetVal !== null) {
+        if (dow===0||hol) td.style.color = 'var(--sun)';
+        else if (dow===6) td.style.color = 'var(--sat)';
+      }
+
+      const dateDiv = document.createElement('div');
+      dateDiv.style.cssText = 'font-size:10px;opacity:0.65;';
+      dateDiv.textContent = d;
+      const valDiv = document.createElement('div');
+      valDiv.style.cssText = 'font-size:14px;font-weight:700;';
+      valDiv.textContent = targetVal !== null ? targetVal : '?';
+      td.appendChild(dateDiv);
+      td.appendChild(valDiv);
+      td.onclick = () => startOverrideEdit(center.id, d, dateKey, td);
+      tr.appendChild(td);
+
+      if (dow === 6) { tbl.appendChild(tr); rowCount++; tr = document.createElement('tr'); }
+    }
+    const lastDow = getDow(currentYear, currentMonth, days);
+    for (let i = lastDow + 1; i <= 6; i++) {
+      const td = document.createElement('td'); td.className = 'empty-cell'; tr.appendChild(td);
+    }
+    if (lastDow !== 6) { tbl.appendChild(tr); rowCount++; }
+    // 常に6行になるよう空行でパディング
+    while (rowCount < 6) {
+      const emptyTr = document.createElement('tr');
+      for (let i = 0; i < 7; i++) {
+        const td = document.createElement('td'); td.className = 'empty-cell'; emptyTr.appendChild(td);
+      }
+      tbl.appendChild(emptyTr);
+      rowCount++;
+    }
+    card.appendChild(tbl);
+
+    // 凡例
+    const leg = document.createElement('div');
+    leg.style.cssText = 'display:flex;gap:14px;font-size:10px;color:var(--muted);margin-top:8px;flex-wrap:wrap;';
+    leg.innerHTML = `
+      <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;border:1px solid var(--border);border-radius:2px;background:var(--surface2);"></span>曜日デフォルト</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:rgba(37,99,235,0.12);border:1px solid var(--border);border-radius:2px;"></span>個別上書き</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#1a1d27;border-radius:2px;"></span>未設定（警告）</span>`;
+    card.appendChild(leg);
+    container.appendChild(card);
+  });
+}
+
+function startOverrideEdit(centerId, day, dateKey, td) {
+  if (td.querySelector('input')) return;
+  const current = data.targets[centerId].overrides[dateKey];
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.min = '0'; inp.max = '20';
+  inp.value = current !== undefined ? current : '';
+  inp.placeholder = '空=クリア';
+  inp.style.cssText = 'width:38px;text-align:center;font-size:12px;border:1px solid var(--accent);border-radius:4px;padding:2px;background:var(--bg);color:var(--text);';
+  td.innerHTML = ''; td.appendChild(inp);
+  inp.focus(); inp.select();
+
+  let committed = false;
+  const commit = () => {
+    if (committed) return; committed = true;
+    const v = inp.value.trim();
+    if (v === '') { delete data.targets[centerId].overrides[dateKey]; }
+    else { const n = parseInt(v); if (!isNaN(n) && n >= 0) data.targets[centerId].overrides[dateKey] = n; }
+    localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+    renderTargetTab();
+    updateAllCountRows(getDaysInMonth(currentYear, currentMonth));
+  };
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') inp.blur();
+    if (e.key === 'Escape') { committed = true; renderTargetTab(); }
+  });
+}
+
+// ===== タブ・月移動・保存 =====
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+  document.getElementById(`tab-${tab}`).classList.remove('hidden');
+  el.classList.add('active');
+  if (tab === 'shift') renderAll();
+  if (tab === 'staff') renderStaffMgr();
+  if (tab === 'status') renderStatusMgr();
+  if (tab === 'target') renderTargetTab();
+}
+
+function changeMonthTarget(delta) {
+  const sy = window.scrollY;
+  const container = document.getElementById('target-mgr');
+  // innerHTML クリア時の高さ崩壊を防ぐ
+  container.style.minHeight = container.offsetHeight + 'px';
+  currentMonth += delta;
+  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  if (currentMonth < 1)  { currentMonth = 12; currentYear--; }
+  document.getElementById('monthLabel').textContent = `${currentYear}年${currentMonth}月`;
+  renderTargetTab();
+  container.style.minHeight = '';
+  window.scrollTo(0, sy);
+}
+
+function changeMonth(delta) {
+  currentMonth += delta;
+  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  if (currentMonth < 1)  { currentMonth = 12; currentYear--; }
+  renderAll();
+}
+
+function saveData() {
+  localStorage.setItem('shiftApp_v3', JSON.stringify(data));
+  const btn = event.target;
+  btn.textContent = '✅ 保存済み';
+  setTimeout(() => btn.textContent = '💾 保存', 1500);
+}
+
+function loadData() {
+  try { const r = localStorage.getItem('shiftApp_v3'); return r ? JSON.parse(r) : null; }
+  catch { return null; }
+}
+
+function exportJSON() {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `shiftApp_${currentYear}${String(currentMonth).padStart(2,'0')}.json`;
+  a.click();
+}
+
+function importJSON() {
+  document.getElementById('import-file-input').click();
+}
+
+function onImportFileSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.shifts || !imported.centers) {
+        alert('データ形式が正しくありません。');
+        return;
+      }
+      if (!confirm('現在のデータを上書きして読み込みますか？')) return;
+      localStorage.setItem('shiftApp_v3', JSON.stringify(imported));
+      location.reload();
+    } catch {
+      alert('ファイルの読み込みに失敗しました。');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function exportCSV() {
+  const days = getDaysInMonth(currentYear, currentMonth);
+  const dayNames = ['日','月','火','水','木','金','土'];
+  let csv = `\uFEFF${currentYear}年${currentMonth}月 シフト表\n`;
+  data.centers.forEach(center => {
+    csv += `\n【${center.name}】\n`;
+    csv += 'スタッフ,' + Array.from({length:days},(_,i)=>`${i+1}(${dayNames[getDow(currentYear,currentMonth,i+1)]})`).join(',') + '\n';
+    getActiveStaff(center).forEach(name => {
+      csv += name + ',' + Array.from({length:days},(_,i)=>{
+        const sid = getShiftId(center.id,name,currentYear,currentMonth,i+1);
+        const s = getStatus(sid);
+        return s.id==='work' ? '' : s.id==='hope' ? '休(希)' : s.label;
+      }).join(',') + '\n';
+    });
+    csv += '稼働数,' + Array.from({length:days},(_,i)=>countWorking(center,i+1)).join(',') + '\n';
+  });
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `シフト_${currentYear}${String(currentMonth).padStart(2,'0')}.csv`;
+  a.click();
+}
+
+// ===== PDF エクスポート =====
+async function exportPDF() {
+  const btn = document.querySelector('[onclick="exportPDF()"]');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 生成中...';
+  btn.disabled = true;
+
+  try {
+    const container = document.getElementById('shift-tables');
+
+    // Temporarily replace selects with styled spans for clean capture
+    const selects = container.querySelectorAll('select');
+    const selectData = [];
+    selects.forEach(sel => {
+      const span = document.createElement('span');
+      const sid = sel.value;
+      const s = getStatus(sid);
+      let label = '';
+      if (sid === 'work') label = '';
+      else if (sid === 'hope') label = '休';
+      else label = s.label;
+      span.textContent = label;
+      span.style.cssText = 'color:' + s.color + ';font-weight:600;font-size:12px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;';
+      if (s.bg) span.parentElement && (span.style.background = s.bg);
+      span.className = 'pdf-temp-span';
+      selectData.push({ sel: sel, parent: sel.parentElement, span: span });
+      sel.parentElement.replaceChild(span, sel);
+    });
+
+    // Hide elements that shouldn't be in PDF
+    const hideEls = [
+      document.querySelector('header'),
+      document.querySelector('.tabs'),
+      document.querySelector('.controls'),
+      document.querySelector('.legend')
+    ].filter(Boolean);
+    hideEls.forEach(function(el) { el.style.display = 'none'; });
+
+    // Add temporary title for PDF
+    const pdfTitle = document.createElement('div');
+    pdfTitle.id = 'pdf-temp-title';
+    pdfTitle.style.cssText = 'padding:12px 16px 8px;font-size:16px;font-weight:700;color:#1a1d27;';
+    pdfTitle.innerHTML = '📦 シフト管理 ヤマト運輸 軽貨物配送 — ' + currentYear + '年' + String(currentMonth).padStart(2,'0') + '月';
+    container.parentElement.insertBefore(pdfTitle, container);
+
+    // Capture
+    const canvas = await html2canvas(container.parentElement, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      windowWidth: container.scrollWidth + 40
+    });
+
+    // Create PDF (landscape A4)
+    const jsPDFLib = window.jspdf;
+    const pdf = new jsPDFLib.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 3;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+
+    // 1枚に収まるよう縦横スケールを自動調整
+    const scaleW = usableW / canvas.width;
+    const scaleH = usableH / canvas.height;
+    const scale = Math.min(scaleW, scaleH);
+    const imgW = canvas.width * scale;
+    const imgH = canvas.height * scale;
+    // 中央に配置
+    const offsetX = margin + (usableW - imgW) / 2;
+    const offsetY = margin + (usableH - imgH) / 2;
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', offsetX, offsetY, imgW, imgH);
+
+    pdf.save('シフト_' + currentYear + String(currentMonth).padStart(2,'0') + '.pdf');
+
+    // Restore
+    pdfTitle.remove();
+    hideEls.forEach(function(el) { el.style.display = ''; });
+    selectData.forEach(function(d) {
+      if (d.span.parentElement) d.span.parentElement.replaceChild(d.sel, d.span);
+    });
+
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+    alert('PDF生成に失敗しました: ' + err.message);
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
+}
+
+renderAll();
+</script>
+</body>
+</html>
+
